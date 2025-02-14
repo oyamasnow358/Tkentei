@@ -1,14 +1,15 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import scipy.stats as stats
 import matplotlib.pyplot as plt
 import seaborn as sns
-from scipy import stats
-import os
+import matplotlib.font_manager as fm
 
-# 日本語フォントの設定（同じフォルダにあるフォントを使用）
-font_path = "./your_font.ttf"  # 必要に応じて修正してください
-plt.rcParams['font.family'] = font_path
+# 日本語フォントの設定（フォントは同じフォルダ内のものを使用）
+font_path = "your_japanese_font.ttf"  # フォントのファイル名を正しく指定
+font_prop = fm.FontProperties(fname=font_path)
+plt.rcParams["font.family"] = font_prop.get_name()
 
 # Streamlit アプリのタイトル
 st.title("t検定 Web アプリ")
@@ -60,9 +61,9 @@ if uploaded_file is not None:
             sns.histplot(group1, label=f'{groups[0]}', color='blue', kde=True, ax=ax)
             sns.histplot(group2, label=f'{groups[1]}', color='red', kde=True, ax=ax)
             
-            ax.set_xlabel("値")
-            ax.set_ylabel("頻度")
-            ax.set_title("t検定の比較結果")
+            ax.set_xlabel("値", fontproperties=font_prop)
+            ax.set_ylabel("頻度", fontproperties=font_prop)
+            ax.set_title("t検定の比較結果", fontproperties=font_prop)
             ax.legend()
             
             st.pyplot(fig)
