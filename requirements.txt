@@ -1,0 +1,9 @@
+streamlit
+pandas
+numpy
+scikit-learn
+matplotlib
+seaborn
+ipywidgets
+japanize-matplotlib  # ← 日本語フォントを適用するために追加
+scikit-learn
