@@ -3,30 +3,23 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-import scipy.stats as stats
+from scipy import stats
 import os
 
-# フォント設定（同じフォルダ内の日本語フォントを使用）
-font_path = "./path_to_japanese_font.ttf"  # フォントのパスを正しく指定
-plt.rcParams["font.family"] = font_path
+# 日本語フォントの設定（同じフォルダにあるフォントを使用）
+font_path = "./your_font.ttf"  # 必要に応じて修正してください
+plt.rcParams['font.family'] = font_path
 
 # Streamlit アプリのタイトル
 st.title("t検定 Web アプリ")
 
-# CSVテンプレートのダウンロード
-st.markdown("### CSVテンプレートのダウンロード")
-template_csv = """グループ,値
-A,23.5
-A,24.1
-B,25.3
-B,22.8
-"""
-st.download_button(
-    label="CSVテンプレートをダウンロード",
-    data=template_csv.encode('utf-8-sig'),
-    file_name="template.csv",
-    mime="text/csv"
-)
+# 説明を追加
+st.markdown("""
+### t検定とは？
+- **t検定** は、2つのグループの平均値が統計的に異なるかを検定する方法です。
+- 例えば、「薬を飲んだグループ」と「飲まなかったグループ」の成績を比較する場合に使われます。
+- 検定の結果、p値が **0.05未満** であれば「有意差あり」と判断できます。
+""")
 
 # CSVファイルのアップロード
 st.sidebar.header("データのアップロード")
@@ -37,29 +30,47 @@ if uploaded_file is not None:
     st.write("### アップロードされたデータ")
     st.dataframe(df.head())
     
-    # グループの選択
-    group_column = st.sidebar.selectbox("グループを示す列を選択", df.columns)
-    value_column = st.sidebar.selectbox("数値データの列を選択", [col for col in df.columns if col != group_column])
+    # グループと数値データの選択
+    group_col = st.sidebar.selectbox("グループを表す列を選択", df.columns)
+    value_col = st.sidebar.selectbox("比較する数値データの列を選択", df.columns)
     
-    groups = df[group_column].unique()
-    if len(groups) == 2:
-        group1 = df[df[group_column] == groups[0]][value_column]
-        group2 = df[df[group_column] == groups[1]][value_column]
-        
-        # t検定の実行
-        t_stat, p_value = stats.ttest_ind(group1, group2)
-        
-        st.subheader("t検定の結果")
-        st.write(f"t値: {t_stat:.4f}")
-        st.write(f"p値: {p_value:.4f}")
-        
-        # ヒストグラムの描画
-        fig, ax = plt.subplots()
-        sns.histplot(group1, label=str(groups[0]), kde=True, color="blue", alpha=0.6, ax=ax)
-        sns.histplot(group2, label=str(groups[1]), kde=True, color="red", alpha=0.6, ax=ax)
-        ax.set_xlabel("値")
-        ax.set_ylabel("頻度")
-        ax.legend()
-        st.pyplot(fig)
-    else:
-        st.error("2つのグループを含むデータをアップロードしてください。")
+    if group_col and value_col:
+        groups = df[group_col].unique()
+        if len(groups) != 2:
+            st.error("t検定は2つのグループのみ比較できます。グループ数を確認してください。")
+        else:
+            group1 = df[df[group_col] == groups[0]][value_col].dropna()
+            group2 = df[df[group_col] == groups[1]][value_col].dropna()
+            
+            # t検定の実行
+            t_stat, p_value = stats.ttest_ind(group1, group2)
+            
+            # 結果の表示
+            st.subheader("t検定の結果")
+            st.write(f"t値: {t_stat:.4f}")
+            st.write(f"p値: {p_value:.4f}")
+            
+            if p_value < 0.05:
+                st.success("この結果は統計的に有意です (p < 0.05)！")
+            else:
+                st.info("統計的に有意な差はありません (p ≥ 0.05)")
+            
+            # ヒストグラムの描画
+            fig, ax = plt.subplots()
+            sns.histplot(group1, label=f'{groups[0]}', color='blue', kde=True, ax=ax)
+            sns.histplot(group2, label=f'{groups[1]}', color='red', kde=True, ax=ax)
+            
+            ax.set_xlabel("値")
+            ax.set_ylabel("頻度")
+            ax.set_title("t検定の比較結果")
+            ax.legend()
+            
+            st.pyplot(fig)
+            
+            # 検定の解釈を追加
+            st.markdown("""
+            ### 結果の解釈
+            - **t値** が大きいほど、2つのグループの平均が異なる可能性が高い。
+            - **p値** が **0.05未満** の場合、2つのグループに統計的な差があると判断。
+            - **p値が0.05以上** の場合、「偶然の誤差による差」と考えられる。
+            """)
