@@ -7,7 +7,7 @@ import seaborn as sns
 import matplotlib.font_manager as fm
 
 # 日本語フォントの設定（フォントは同じフォルダ内のものを使用）
-font_path = "your_japanese_font.ttf"  # フォントのファイル名を正しく指定
+font_path = "ipaexg.ttf"  # フォントのファイル名を正しく指定
 font_prop = fm.FontProperties(fname=font_path)
 plt.rcParams["font.family"] = font_prop.get_name()
 
