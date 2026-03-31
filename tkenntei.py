@@ -3,10 +3,8 @@ import pandas as pd
 import requests
 import datetime
 
-
-
 # --- 設定 ---
-GAS_URL = "https://script.google.com/macros/s/AKfycbw8OIWeRd4mdtCArE-xtMOmFr04w6y4sNvX1F-erj2RW8GWX8bLaNDr4Xn06hlMqqfzpA/exec"
+GAS_URL = "https://script.google.com/macros/s/AKfycbwAXOaNnk5xwyQlalJlCEkyqUMVpUomfl0RLXXe8d9S0_4CaDGoe4uZoPfDDHnExbB2dw/exec"
 
 st.set_page_config(page_title="総合支援部 応援調整ツール", layout="wide", initial_sidebar_state="expanded")
 
@@ -74,7 +72,7 @@ st.markdown("""
 
 def fetch_data():
     try:
-        res = requests.get(f"{GAS_URL}?t={datetime.datetime.now().timestamp()}", timeout=10)
+        res = requests.get(f"{GAS_URL}?t={datetime.datetime.now().timestamp()}", timeout=60)
         if res.status_code == 200:
             df = pd.DataFrame(res.json())
             if not df.empty:
@@ -95,7 +93,7 @@ def fetch_data():
 
 def post_to_gas(payload):
     try:
-        res = requests.post(GAS_URL, json=payload, timeout=10)
+        res = requests.post(GAS_URL, json=payload, timeout=60)
         return res.status_code == 200
     except:
         return False
