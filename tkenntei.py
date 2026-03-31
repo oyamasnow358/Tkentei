@@ -190,7 +190,7 @@ def render_request_cards(data_df):
 st.markdown("""
     <div class="main-header">
         <h1>🛡️ 総合支援部 応援調整ツール</h1>
-        <p>全学部の状況を俯瞰し、最適な人員配置を支援する司令塔</p>
+        <p>応援が必要な場合、毎朝8：30までに入力してください。学部ごとに1日1回回答してください。</p>
     </div>
 """, unsafe_allow_html=True)
 
@@ -311,7 +311,7 @@ else:
     with st.form("req_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
         d_in = col1.selectbox("依頼元の学部", ["小学部", "中学部", "高等部"])
-        t_in = col2.text_input("対象（クラス・作業班・場所）", placeholder="例: 1年1組 / 農耕班")
+        t_in = col2.text_input("対象【複数可】（クラス・作業班・場所など）", placeholder="例: 1年1組 / 農耕班")
 
         col3, col4, col5 = st.columns(3)
         s_in = col3.time_input("開始時間", datetime.time(9, 0))
