@@ -1,98 +1,134 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
-import scipy.stats as stats
-import matplotlib.pyplot as plt
-import seaborn as sns
-import matplotlib.font_manager as fm
+import requests
+import datetime
 
-# 日本語フォントの設定（フォントは同じフォルダ内のものを使用）
-font_path = "ipaexg.ttf"  # フォントのファイル名を正しく指定
-font_prop = fm.FontProperties(fname=font_path)
-plt.rcParams["font.family"] = font_prop.get_name()
+# --- 設定 ---
+GAS_URL = "https://script.google.com/macros/s/AKfycbx8zdcF31wtnoD6sS7QcDHSvWh9NMV5zvR-3W1mUsOErcAU8b4Xgz_2M2iyFM3xfjdbmw/exec"
 
-# Streamlit アプリのタイトル
-st.title("t検定 Web アプリ")
+st.set_page_config(page_title="総合支援部 応援マネジメントシステム", layout="wide", initial_sidebar_state="expanded")
 
-# 説明の追加
+# --- 究極の視認性を追求したCSS ---
 st.markdown("""
-### 📌 t検定とは？
-t検定は **2つのグループの平均値に有意な差があるか** を検定する方法です。  
-例えば、「ICTを活用したグループ」と「活用しなかったグループ」でテストの点数に違いがあるかを調べるときに使います。
+    <style>
+    .main { background-color: #f4f7f9; }
+    .stMetric { background-color: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-top: 6px solid #1e3a8a; }
+    div[data-testid="stExpander"] { background-color: #ffffff; border-radius: 10px; border: 1px solid #ddd; }
+    .stTabs [data-baseweb="tab-list"] { gap: 10px; }
+    .stTabs [data-baseweb="tab"] {
+        height: 50px; background-color: #e2e8f0; border-radius: 10px 10px 0 0; font-weight: bold; padding: 0 25px;
+    }
+    .stTabs [aria-selected="true"] { background-color: #1e3a8a !important; color: white !important; }
+    .section-title { font-size: 1.5rem; font-weight: bold; color: #1e3a8a; margin: 20px 0 10px 0; border-left: 10px solid #1e3a8a; padding-left: 15px; }
+    </style>
+    """, unsafe_allow_html=True)
 
-### 📊 このアプリの使い方
-0. CSVファイルをダウンロードする（サンプルに従いデータを入力）           
-1. CSVファイルをアップロードする（2つのグループのデータを用意）
-2. 比較する2つのグループと値の列をそれぞれ選択する
-3. t検定の結果を確認する（p値が **0.05未満** なら「統計的に有意な差がある」と判断）
-""")
+# --- データ連携 ---
+def fetch_data():
+    try:
+        # キャッシュ無効化のためのクエリパラメータ
+        response = requests.get(f"{GAS_URL}?t={datetime.datetime.now().timestamp()}")
+        if response.status_code == 200:
+            df = pd.DataFrame(response.json())
+            if not df.empty:
+                df.columns = [c.strip() for c in df.columns]
+                # 人数列を数値に変換（集計用）
+                df["人数"] = pd.to_numeric(df["人数"], errors='coerce').fillna(0).astype(int)
+                return df
+        return pd.DataFrame()
+    except:
+        return pd.DataFrame()
 
-# CSVテンプレートのダウンロード
-st.markdown("### 📥 CSVテンプレートのダウンロード")
-template_csv = """グループ1,グループ2
-55,60
-62,58
-53,65
-61,59
-66,63
-"""
-st.download_button(
-    label="CSVテンプレートをダウンロード",
-    data=template_csv.encode('utf-8-sig'),
-    file_name="t_test_template.csv",
-    mime="text/csv"
-)
+# --- サイドバー構成 ---
+st.sidebar.title("🏨 システムメニュー")
+app_mode = st.sidebar.selectbox("表示モード切替", ["📊 総合支援部（管理・俯瞰）", "➕ 応援依頼を入力（各学部用）"])
 
-# CSVファイルのアップロード
-st.sidebar.header("データのアップロード")
-uploaded_file = st.sidebar.file_uploader("CSVファイルをアップロード", type=["csv"])
+st.sidebar.divider()
+st.sidebar.subheader("📅 日付選択")
+# デフォルトで今日を選択。変更すれば全データから該当日のものを抽出
+target_date = st.sidebar.date_input("表示する日付を選択", datetime.date.today())
+date_str = target_date.strftime("%Y-%m-%d")
 
-if uploaded_file is not None:
-    df = pd.read_csv(uploaded_file)
-    st.write("### アップロードされたデータ")
-    st.dataframe(df.head())
+# --- メインコンテンツ ---
+
+# 1. 総合支援部 モード
+if app_mode == "📊 総合支援部（管理・俯瞰）":
+    st.markdown(f"<div class='section-title'>{target_date.strftime('%m月%d日')} 応援状況概況</div>", unsafe_allow_html=True)
     
-    # グループと数値データの選択
-    group_col = st.sidebar.selectbox("グループを表す列を選択", df.columns)
-    value_col = st.sidebar.selectbox("比較する数値データの列を選択", df.columns)
+    raw_df = fetch_data()
     
-    if group_col and value_col:
-        groups = df[group_col].unique()
-        if len(groups) != 2:
-            st.error("t検定は2つのグループのみ比較できます。グループ数を確認してください。")
+    if not raw_df.empty and "日付" in raw_df.columns:
+        # 選択された日付でフィルタリング
+        df = raw_df[raw_df["日付"] == date_str].copy()
+        
+        if not df.empty:
+            # 学部別集計カード
+            summary = df.groupby("学部")["人数"].sum().reindex(["小学部", "中学部", "高等部"], fill_value=0)
+            
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("小学部 必要数", f"{summary['小学部']}名")
+            m2.metric("中学部 必要数", f"{summary['中学部']}名")
+            m3.metric("高等部 必要数", f"{summary['高等部']}名")
+            m4.metric("全学部 合計", f"{summary.sum()}名", delta_color="inverse")
+
+            st.write("---")
+            
+            # 詳細表示（全体・個別の切り替え）
+            tab_all, tab_elem, tab_mid, tab_high = st.tabs(["🌎 全学部一括表示", "🐥 小学部", "🏃 中学部", "🎓 高等部"])
+            
+            with tab_all:
+                st.subheader("全学部の応援要請（時系列順）")
+                # 時間でソートして全体を見やすく
+                all_display = df.sort_values(["開始", "学部"])[["学部", "対象", "開始", "終了", "人数", "備考"]]
+                st.dataframe(all_display, use_container_width=True, hide_index=True)
+                
+            with tab_elem:
+                st.dataframe(df[df["学部"] == "小学部"][["対象", "開始", "終了", "人数", "備考"]], use_container_width=True, hide_index=True)
+            with tab_mid:
+                st.dataframe(df[df["学部"] == "中学部"][["対象", "開始", "終了", "人数", "備考"]], use_container_width=True, hide_index=True)
+            with tab_high:
+                st.dataframe(df[df["学部"] == "高等部"][["対象", "開始", "終了", "人数", "備考"]], use_container_width=True, hide_index=True)
         else:
-            group1 = df[df[group_col] == groups[0]][value_col].dropna()
-            group2 = df[df[group_col] == groups[1]][value_col].dropna()
+            st.info(f"{date_str} の応援要請は登録されていません。")
+    else:
+        st.warning("データがありません。スプレッドシートを確認してください。")
+
+    if st.button("🔄 情報を最新に更新"):
+        st.rerun()
+
+# 2. 入力 モード
+else:
+    st.markdown(f"<div class='section-title'>{target_date.strftime('%m月%d日')} の応援を依頼</div>", unsafe_allow_html=True)
+    
+    with st.container():
+        st.write("応援が必要な時間と場所を入力してください。")
+        with st.form("input_form", clear_on_submit=True):
+            dept = st.selectbox("学部", ["小学部", "中学部", "高等部"])
+            target = st.text_input("対象（クラス名・作業班名など）", placeholder="例: 1年1組、農耕班")
             
-            # t検定の実行
-            t_stat, p_value = stats.ttest_ind(group1, group2)
+            c1, c2 = st.columns(2)
+            s_time = c1.time_input("開始時間", datetime.time(9, 0))
+            e_time = c2.time_input("終了時間", datetime.time(15, 0))
             
-            # 結果の表示
-            st.subheader("t検定の結果")
-            st.write(f"t値: {t_stat:.4f}")
-            st.write(f"p値: {p_value:.4f}")
+            count = st.number_input("必要な人数", 1, 10, 1)
+            notes = st.text_area("詳細・理由", placeholder="例: 担任不在のため、授業補助をお願いします。")
             
-            if p_value < 0.05:
-                st.success("この結果は統計的に有意です (p < 0.05)！")
-            else:
-                st.info("統計的に有意な差はありません (p ≥ 0.05)")
-            
-            # ヒストグラムの描画
-            fig, ax = plt.subplots()
-            sns.histplot(group1, label=f'{groups[0]}', color='blue', kde=True, ax=ax)
-            sns.histplot(group2, label=f'{groups[1]}', color='red', kde=True, ax=ax)
-            
-            ax.set_xlabel("値", fontproperties=font_prop)
-            ax.set_ylabel("頻度", fontproperties=font_prop)
-            ax.set_title("t検定の比較結果", fontproperties=font_prop)
-            ax.legend()
-            
-            st.pyplot(fig)
-            
-            # 検定の解釈を追加
-            st.markdown("""
-            ### 結果の解釈
-            - **t値** が大きいほど、2つのグループの平均が異なる可能性が高い。
-            - **p値** が **0.05未満** の場合、2つのグループに統計的な差があると判断。
-            - **p値が0.05以上** の場合、「偶然の誤差による差」と考えられる。
-            """)
+            if st.form_submit_button("📢 応援依頼を送信"):
+                if not target:
+                    st.error("「対象」を入力してください。")
+                else:
+                    payload = {
+                        "date": date_str,
+                        "department": dept,
+                        "target": target,
+                        "startTime": s_time.strftime("%H:%M"),
+                        "endTime": e_time.strftime("%H:%M"),
+                        "count": count,
+                        "notes": notes
+                    }
+                    res = requests.post(GAS_URL, json=payload)
+                    if res.status_code == 200:
+                        st.success(f"送信完了！ {date_str} の {dept} 応援として記録されました。")
+                        st.balloons()
+                    else:
+                        st.error("送信に失敗しました。")
