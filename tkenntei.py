@@ -4,7 +4,7 @@ import requests
 import datetime
 
 # --- 設定 ---
-GAS_URL = "https://script.google.com/macros/s/AKfycbwAXOaNnk5xwyQlalJlCEkyqUMVpUomfl0RLXXe8d9S0_4CaDGoe4uZoPfDDHnExbB2dw/exec"
+GAS_URL = "https://script.google.com/macros/s/AKfycbxV27b4tRds9ykrBsBMeAV8vVqe9tgTrhr4l6zE1na4wF89uNfU29yjwx-J6BbkLSlfgg/exec"
 
 st.set_page_config(page_title="総合支援部 応援調整ツール", layout="wide", initial_sidebar_state="expanded")
 
@@ -94,8 +94,19 @@ def fetch_data():
 def post_to_gas(payload):
     try:
         res = requests.post(GAS_URL, json=payload, timeout=60)
-        return res.status_code == 200
-    except:
+        if res.status_code == 200:
+            try:
+                result = res.json()
+                if result.get("status") == "not_found" and "debug" in result:
+                    st.warning("一致する行が見つかりませんでした。送信値とシートの値を比較します：")
+                    debug_df = pd.DataFrame(result["debug"])
+                    st.dataframe(debug_df)
+                return result.get("status") == "success"
+            except Exception:
+                return True
+        return False
+    except Exception as ex:
+        st.error(f"通信エラー: {ex}")
         return False
 
 
