@@ -4,7 +4,7 @@ import requests
 import datetime
 
 # --- 設定 ---
-GAS_URL = "あなたのGASのURL"
+GAS_URL = "https://script.google.com/macros/s/AKfycbx8zdcF31wtnoD6sS7QcDHSvWh9NMV5zvR-3W1mUsOErcAU8b4Xgz_2M2iyFM3xfjdbmw/exec"
 
 # ページ設定
 st.set_page_config(page_title="総合支援部 応援調整ツール", layout="wide", initial_sidebar_state="expanded")
