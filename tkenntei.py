@@ -124,7 +124,7 @@ if app_mode == "📊 総合支援部（管理画面）":
 
         # 2. 詳細表示エリア
         st.subheader("📋 応援要請・タイムライン詳細")
-        tab_all, tab_e, tab_m, tab_h = st.tabs(["🌎 全学部一括 (司令塔用)", "🐥 小学部", "🏃 中学部", "🎓 高等部"])
+        tab_all, tab_e, tab_m, tab_h = st.tabs(["🌎 全学部一括 ", "🐥 小学部", "🏃 中学部", "🎓 高等部"])
         
         with tab_all:
             if not df.empty:
