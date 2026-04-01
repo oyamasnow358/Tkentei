@@ -5,7 +5,7 @@ import datetime
 import io
 
 # --- 設定 ---
-GAS_URL = "あなたのGASのウェブアプリURLをここに貼り付け"
+GAS_URL = "https://script.google.com/macros/s/AKfycbw_QH8gdGWjJzhUK9SX-UaH5JU9Elf2hMIN-mO89C58ZT1es46n-iBDh7WoZMun-mRkBQ/exec"
 
 st.set_page_config(page_title="総合支援部 応援調整ツール", layout="wide", initial_sidebar_state="expanded")
 
